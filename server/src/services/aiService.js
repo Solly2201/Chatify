@@ -8,7 +8,7 @@ const TONE_INSTRUCTIONS = {
 
 export const SUPPORTED_TONES = Object.keys(TONE_INSTRUCTIONS);
 export const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
-const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
+const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
 
 let openaiClient, groqClient;
 function getOpenAI() {
@@ -29,7 +29,8 @@ function getGroq() {
 // Temporary provider failures worth falling back on: rate limit, quota, server errors, connectivity.
 function isFallbackWorthy(err) {
   const status = err?.status || err?.response?.status;
-  return status === 429 || (status >= 500 && status < 600) || err?.code === "insufficient_quota" || !status;
+  // 401 counts too: an invalid/missing key makes OpenAI effectively unavailable.
+  return status === 429 || status === 401 || (status >= 500 && status < 600) || err?.code === "insufficient_quota" || !status;
 }
 
 function buildMessages(history, tone) {
