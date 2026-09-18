@@ -4,10 +4,12 @@ import ChatHeader from "./components/ChatHeader";
 import MessageList from "./components/MessageList";
 import Composer from "./components/Composer";
 import FindBar from "./components/FindBar";
+import LoginScreen from "./components/LoginScreen";
 import { useChat } from "./hooks/useChat";
 import { countMatches } from "./services/lookup";
 
 export default function App() {
+  const [authed, setAuthed] = useState(() => localStorage.getItem("chatify_demo_auth") === "1");
   const chat = useChat();
   const [editing, setEditing] = useState(null); // message being edited
   const [findOpen, setFindOpen] = useState(false);
@@ -56,9 +58,24 @@ export default function App() {
     }
   };
 
+  if (!authed) {
+    return (
+      <LoginScreen
+        onLogin={() => {
+          localStorage.setItem("chatify_demo_auth", "1");
+          setAuthed(true);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="h-full flex">
       <Sidebar
+        onLogout={() => {
+          localStorage.removeItem("chatify_demo_auth");
+          setAuthed(false);
+        }}
         conversations={chat.conversations}
         activeId={chat.activeId}
         onNew={() => chat.newChat(false)}

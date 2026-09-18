@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Search, MessageSquare, Trash2, Ghost } from "lucide-react";
+import { Plus, Search, MessageSquare, Trash2, Ghost, LogOut } from "lucide-react";
 
 function groupByDate(conversations) {
   const today = new Date().toDateString();
@@ -14,7 +14,7 @@ function groupByDate(conversations) {
   return groups;
 }
 
-export default function Sidebar({ conversations, activeId, onNew, onNewTemp, onOpen, onDelete, searchRef }) {
+export default function Sidebar({ conversations, activeId, onNew, onNewTemp, onOpen, onDelete, searchRef, onLogout }) {
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(
@@ -92,6 +92,17 @@ export default function Sidebar({ conversations, activeId, onNew, onNewTemp, onO
         {filtered.length === 0 && (
           <div className="text-sm text-neutral-600 px-1 pt-2">No conversations yet.</div>
         )}
+      </div>
+
+      <div className="p-3 border-t border-ink-700/60 flex items-center justify-between">
+        <span className="text-[12px] text-neutral-600">Demo account · quantiphi</span>
+        <button
+          onClick={onLogout}
+          className="flex items-center gap-1 text-[12px] text-neutral-500 hover:text-neutral-200 transition-colors"
+          title="Log out"
+        >
+          <LogOut size={13} /> Log out
+        </button>
       </div>
     </aside>
   );

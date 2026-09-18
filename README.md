@@ -15,7 +15,9 @@ A dark, iMessage-inspired AI chat assistant. React frontend, Express backend, Mo
 - **Context panel** — message count, tone, model, start time, storage mode
 - **Response metadata** — model · response time · real token usage (only when the API returns it)
 - **Markdown rendering** — headings, lists, inline and fenced code
-- **Keyboard shortcuts** — Enter send, Shift+Enter newline, Esc stop, Ctrl/Cmd+K search
+- **Keyboard shortcuts** — Enter send, Shift+Enter newline, Esc stop, Ctrl/Cmd+K search, Ctrl/Cmd+F find in conversation
+- **Demo login** — preset assessment credentials gate the UI (see below); not production authentication
+- **Request protection** — lightweight in-memory rate limit on message requests (HTTP 429 with a clear message)
 
 ## Tech Stack
 
@@ -61,6 +63,15 @@ npm install
 npm run dev            # http://localhost:5173
 ```
 
+### Demo login
+
+The UI is gated by a preset **demo account** (shown on the login screen):
+
+- Username: `quantiphi`
+- Password: `quantiphi`
+
+These are intentionally preset assessment/demo credentials checked client-side — this is a demo access gate, **not** production authentication. Nothing about the login touches MongoDB or any secret.
+
 ### Environment variables (`server/.env`)
 
 ```
@@ -90,4 +101,12 @@ API keys never reach the frontend; all AI calls happen server-side.
 - **Complete responses only** are saved to MongoDB (one write per reply, never per token). If the user stops generation, the partial text is saved once.
 - **Temporary chats** live in an in-memory `Map` on the server with the same interface as Mongo-backed chats, so the rest of the code doesn't care.
 - **Tone mapping lives server-side**; the client only sends a tone id, never a system prompt.
+
+## Limitations
+
+- In-conversation lookup is client-side and searches only the currently loaded conversation.
+- Contextual follow-up suggestions use deterministic heuristics rather than an additional AI call.
+- Provider availability depends on network/API configuration (including the assessment environment).
+- Lookup is keyword/substring based, not semantic search/RAG.
+- **Rate limiting**: a simple in-memory sliding window (10 message requests per 30s per client IP) returns HTTP 429 with `source: "local"`, so it is distinguishable from upstream provider rate limits (which trigger the Groq fallback server-side instead). Stale entries are swept periodically.
 - **Provider fallback**: Gemini is primary (via its official OpenAI-compatible endpoint, so the OpenAI SDK covers both providers); Groq takes over only when Gemini is effectively unavailable — rate limit, quota, auth errors, server errors, or the endpoint being unreachable. Both receive identical history + tone instructions, and the frontend is provider-agnostic — it just displays the model reported in the stream's `done` event.
