@@ -57,9 +57,11 @@ export async function sendMessage(req, res, next) {
 
     let full = "";
     let usage = null;
+    let usedModel = MODEL;
     const started = Date.now();
     try {
-      const stream = await streamChat({ history: convo.messages, tone, signal: abort.signal });
+      const { stream, model } = await streamChat({ history: convo.messages, tone, signal: abort.signal });
+      usedModel = model;
       for await (const chunk of stream) {
         const delta = chunk.choices?.[0]?.delta?.content;
         if (delta) {
@@ -90,7 +92,7 @@ export async function sendMessage(req, res, next) {
     send({
       type: "done",
       messageId,
-      model: MODEL,
+      model: usedModel,
       responseMs: Date.now() - started,
       usage: usage
         ? { prompt_tokens: usage.prompt_tokens, completion_tokens: usage.completion_tokens, total_tokens: usage.total_tokens }

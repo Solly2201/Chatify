@@ -34,7 +34,8 @@ React (Vite, :5173)
 Express (:5000)
    ├── conversationService ──> MongoDB (persistent chats)
    │                       └─> in-memory Map (temporary chats)
-   └── aiService ────────────> OpenAI (streaming, tone as system prompt)
+   └── aiService ────────────> OpenAI (primary, streaming)
+                           └─> Groq  (automatic fallback on rate-limit/quota/5xx)
 ```
 
 - `server/src/controllers` — request handling and validation
@@ -66,7 +67,9 @@ npm run dev            # http://localhost:5173
 OPENAI_API_KEY=sk-...
 MONGODB_URI=mongodb://127.0.0.1:27017/chatify
 PORT=5000
-OPENAI_MODEL=gpt-4o-mini   # optional
+OPENAI_MODEL=gpt-4o-mini             # optional
+GROQ_API_KEY=gsk_...                 # optional fallback provider
+GROQ_MODEL=llama-3.1-8b-instant      # optional
 ```
 
 The API key never reaches the frontend; all OpenAI calls happen server-side.
@@ -87,3 +90,4 @@ The API key never reaches the frontend; all OpenAI calls happen server-side.
 - **Complete responses only** are saved to MongoDB (one write per reply, never per token). If the user stops generation, the partial text is saved once.
 - **Temporary chats** live in an in-memory `Map` on the server with the same interface as Mongo-backed chats, so the rest of the code doesn't care.
 - **Tone mapping lives server-side**; the client only sends a tone id, never a system prompt.
+- **Provider fallback**: OpenAI is primary; Groq (OpenAI-compatible API, same SDK) takes over only on rate-limit/quota/temporary server failures. Both receive identical history + tone instructions, and the frontend is provider-agnostic — it just displays the model reported in the stream's `done` event.
