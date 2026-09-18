@@ -5,7 +5,7 @@ A dark, iMessage-inspired AI chat assistant. React frontend, Express backend, Mo
 ## Features
 
 - **Streaming AI chat** — responses stream token-by-token over SSE with a blinking cursor and a stop button
-- **Tone system** — Professional / Casual / Concise, applied **server-side** as system instructions; tone persists per conversation
+- **Tone system** — Professional / Casual / Concise / Straightforward, applied **server-side** as system instructions; tone persists per conversation
 - **Conversation history** — sidebar grouped by Today / Yesterday / Earlier, with search (Ctrl/Cmd+K) and delete
 - **Regenerate** — re-answer the last message with the currently selected tone
 - **Edit & resend** — edit an earlier user message; the conversation is truncated and the response rebuilt

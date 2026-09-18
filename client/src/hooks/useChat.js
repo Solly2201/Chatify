@@ -4,7 +4,8 @@ import { api, streamMessage } from "../services/api";
 export const TONES = [
   { id: "professional", label: "Professional", hint: "Structured and formal" },
   { id: "casual", label: "Casual", hint: "Friendly and conversational" },
-  { id: "concise", label: "Concise", hint: "Short and direct" }
+  { id: "concise", label: "Concise", hint: "Short and direct" },
+  { id: "straightforward", label: "Straightforward", hint: "Candid and factual" }
 ];
 
 export function useChat() {

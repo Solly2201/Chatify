@@ -3,7 +3,9 @@ import OpenAI from "openai";
 const TONE_INSTRUCTIONS = {
   professional: "Respond in a professional, structured and clear manner.",
   casual: "Respond in a friendly, natural and conversational manner.",
-  concise: "Respond concisely and prioritize the most important information."
+  concise: "Respond concisely and prioritize the most important information.",
+  straightforward:
+    "Respond directly, honestly, and clearly. Prioritize factual accuracy over agreement or reassurance. Distinguish facts from assumptions or opinions, acknowledge meaningful uncertainty, and correct incorrect premises when necessary. Avoid unnecessary hedging or filler while remaining respectful and professional."
 };
 
 export const SUPPORTED_TONES = Object.keys(TONE_INSTRUCTIONS);
