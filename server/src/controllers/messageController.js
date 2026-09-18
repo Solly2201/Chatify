@@ -1,8 +1,6 @@
 import * as store from "../services/conversationService.js";
 import { streamChat, SUPPORTED_TONES, MODEL } from "../services/aiService.js";
 
-// POST /api/conversations/:id/messages
-// Body: { message, tone, regenerate?, editMessageId? }
 // Streams the assistant reply as SSE events:
 //   {type:"chunk", content} | {type:"done", usage, model, messageId} | {type:"error", error}
 export async function sendMessage(req, res, next) {
@@ -45,7 +43,6 @@ export async function sendMessage(req, res, next) {
       }
     }
 
-    // SSE headers
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
@@ -80,7 +77,8 @@ export async function sendMessage(req, res, next) {
       // Client aborted: fall through and save what we have.
     }
 
-    // Save the COMPLETE assistant response once.
+    // Save the complete (or partial-on-stop) response in a single write —
+    // never one write per streamed chunk.
     let messageId = null;
     if (full) {
       convo.messages.push({ role: "assistant", content: full, timestamp: new Date() });

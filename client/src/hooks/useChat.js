@@ -71,7 +71,8 @@ export function useChat() {
     [activeId, newChat, refreshList]
   );
 
-  // Core send: handles new message, regenerate, and edit&resend.
+  // Single send path for new messages, regenerate, and edit&resend — the
+  // server owns the matching history truncation for the latter two.
   const send = useCallback(
     async ({ message, regenerate = false, editMessageId = null } = {}) => {
       if (streaming) return;
@@ -91,7 +92,6 @@ export function useChat() {
         }
       }
 
-      // Optimistic local update
       setMessages((prev) => {
         let next = [...prev];
         if (regenerate) {

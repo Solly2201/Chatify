@@ -1,6 +1,6 @@
 # Chatify ◈
 
-A dark, iMessage-inspired AI chat assistant. React frontend, Express backend, MongoDB persistence, and streamed OpenAI responses.
+A dark, iMessage-inspired AI chat assistant. React frontend, Express backend, MongoDB persistence, and streamed Gemini responses (with an automatic Groq fallback).
 
 ## Features
 
@@ -46,7 +46,7 @@ Express (:5000)
 
 ## Setup
 
-Prerequisites: Node 18+, MongoDB running locally (or an Atlas URI), an OpenAI API key.
+Prerequisites: Node 18+, MongoDB running locally (or an Atlas URI), a Gemini API key (and optionally a Groq API key for fallback).
 
 ```bash
 # Backend
@@ -90,4 +90,4 @@ API keys never reach the frontend; all AI calls happen server-side.
 - **Complete responses only** are saved to MongoDB (one write per reply, never per token). If the user stops generation, the partial text is saved once.
 - **Temporary chats** live in an in-memory `Map` on the server with the same interface as Mongo-backed chats, so the rest of the code doesn't care.
 - **Tone mapping lives server-side**; the client only sends a tone id, never a system prompt.
-- **Provider fallback**: Gemini is primary (via its official OpenAI-compatible endpoint, so the OpenAI SDK covers both providers); Groq takes over only on rate-limit/quota/auth/temporary server failures. Both receive identical history + tone instructions, and the frontend is provider-agnostic — it just displays the model reported in the stream's `done` event.
+- **Provider fallback**: Gemini is primary (via its official OpenAI-compatible endpoint, so the OpenAI SDK covers both providers); Groq takes over only when Gemini is effectively unavailable — rate limit, quota, auth errors, server errors, or the endpoint being unreachable. Both receive identical history + tone instructions, and the frontend is provider-agnostic — it just displays the model reported in the stream's `done` event.

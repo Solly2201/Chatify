@@ -31,8 +31,9 @@ function getGroq() {
   return groqClient;
 }
 
-// Provider failures worth falling back on: rate limit, quota, server errors,
-// connectivity, and auth (an invalid/missing key makes the provider unavailable).
+// Fall back only when the primary is effectively unavailable: rate limit,
+// quota, auth (bad/missing key), not-found, server errors, or no HTTP
+// response at all (network/proxy failure).
 function isFallbackWorthy(err) {
   const status = err?.status || err?.response?.status;
   return status === 429 || status === 401 || status === 403 || status === 404 || (status >= 500 && status < 600) || err?.code === "insufficient_quota" || !status;
@@ -48,8 +49,8 @@ function buildMessages(history, tone) {
   ];
 }
 
-// Returns { stream, model, provider }. Tries Gemini first; falls back to Groq
-// on rate-limit/quota/auth/temporary failures when GROQ_API_KEY is configured.
+// Returns { stream, model, provider }: Gemini first, Groq when Gemini fails
+// with a fallback-worthy error and GROQ_API_KEY is configured.
 export async function streamChat({ history, tone, signal }) {
   const messages = buildMessages(history, tone);
   const request = (client, model) =>
