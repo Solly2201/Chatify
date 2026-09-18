@@ -54,6 +54,18 @@ body {
 .markdown a {
   @apply text-accent underline;
 }
+.markdown table {
+  @apply w-auto max-w-full border-collapse text-[13.5px] mb-2 block overflow-x-auto;
+}
+.markdown th {
+  @apply bg-ink-850 text-neutral-200 font-semibold text-left border border-ink-600/60 px-3 py-1.5;
+}
+.markdown td {
+  @apply border border-ink-600/50 px-3 py-1.5 align-top;
+}
+.markdown tr:nth-child(even) td {
+  @apply bg-ink-900/50;
+}
 .markdown blockquote {
   @apply border-l-2 border-accent/50 pl-3 text-neutral-400 mb-2;
 }

@@ -1,18 +1,68 @@
 import { useEffect, useRef } from "react";
 import MessageBubble, { AiSymbol } from "./MessageBubble";
+import { countMatches } from "../services/lookup";
 
-const SUGGESTIONS = [
-  "Explain this with an analogy",
-  "Give me a real-world example",
-  "How does this work internally?"
-];
+// Deterministic follow-up chips derived from the last user question —
+// no extra AI call, just cheap intent + topic heuristics.
+function extractTopic(text) {
+  const topic = text
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^(what|who|when|where|why|how|can you|could you|please|tell me about)(\s+(is|are|does|do|can|would|should|did))?\s+/i, "")
+    .replace(/[?.!,;:]+$/, "");
+  return topic.length > 2 && topic.length <= 40 ? topic : null;
+}
 
-export default function MessageList({ messages, streaming, streamText, meta, error, onRegenerate, onEdit, onSuggestion }) {
+function deriveSuggestions(messages) {
+  const lastUser = [...messages].reverse().find((m) => m.role === "user");
+  if (!lastUser) return [];
+  const text = lastUser.content.toLowerCase();
+  const topic = extractTopic(lastUser.content);
+
+  if (/\bvs\.?\b|\bversus\b|compare|difference between/.test(text)) {
+    return ["What are the key differences?", "When should I use each?", "Summarize this as a comparison table"];
+  }
+  if (/\bcode\b|implement|function|\bapi\b|\berror\b|\bbug\b|debug|syntax/.test(text)) {
+    return ["Can you show a code example?", "What are the common mistakes?", "How would I test this?"];
+  }
+  if (/explain|why |how does|how do/.test(text)) {
+    return ["Can you simplify that?", "Explain it with an analogy", "What are the key takeaways?"];
+  }
+  if (topic) {
+    return [
+      `How does ${topic} work internally?`,
+      `Give me a real-world example of ${topic}`,
+      `What are practical applications of ${topic}?`
+    ];
+  }
+  return ["Explain this with an analogy", "Give me a real-world example", "How does this work internally?"];
+}
+
+export default function MessageList({ messages, streaming, streamText, meta, error, onRegenerate, onEdit, onSuggestion, find }) {
   const bottomRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamText, streaming]);
+
+  // Scroll the active lookup match into view whenever it changes.
+  useEffect(() => {
+    if (find?.query) {
+      document.querySelector("mark[data-active]")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, [find?.query, find?.activeGlobal]);
+
+  // Map the global active-match index to a per-message occurrence index.
+  const searchPerMsg = messages.map(() => null);
+  if (find?.query) {
+    let before = 0;
+    messages.forEach((m, i) => {
+      const n = countMatches(m.content, find.query);
+      const activeLocal = find.activeGlobal >= before && find.activeGlobal < before + n ? find.activeGlobal - before : -1;
+      searchPerMsg[i] = { query: find.query, activeLocal };
+      before += n;
+    });
+  }
 
   const lastAssistantIdx = [...messages].map((m) => m.role).lastIndexOf("assistant");
   const showSuggestions = !streaming && messages.length > 0 && messages[messages.length - 1].role === "assistant";
@@ -37,6 +87,7 @@ export default function MessageList({ messages, streaming, streamText, meta, err
           meta={meta}
           onRegenerate={onRegenerate}
           onEdit={onEdit}
+          search={searchPerMsg[i]}
         />
       ))}
 
@@ -63,7 +114,7 @@ export default function MessageList({ messages, streaming, streamText, meta, err
 
       {showSuggestions && (
         <div className="flex flex-wrap gap-2 pl-7">
-          {SUGGESTIONS.map((s) => (
+          {deriveSuggestions(messages).map((s) => (
             <button
               key={s}
               onClick={() => onSuggestion(s)}
