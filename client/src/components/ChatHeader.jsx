@@ -33,7 +33,7 @@ export default function ChatHeader({ title, messageCount, tone, temporary, meta,
           <div className="font-medium text-neutral-200 mb-1">Context</div>
           <Row label="Messages" value={messageCount} />
           <Row label="Tone" value={toneLabel} />
-          <Row label="Model" value={meta?.model || "gpt-4o-mini"} />
+          <Row label="Model" value={meta?.model || "gemini-2.0-flash"} />
           <Row
             label="Started"
             value={convoInfo?.createdAt ? new Date(convoInfo.createdAt).toLocaleString() : "—"}

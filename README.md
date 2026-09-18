@@ -22,7 +22,7 @@ A dark, iMessage-inspired AI chat assistant. React frontend, Express backend, Mo
 | Layer    | Tech                                              |
 | -------- | ------------------------------------------------- |
 | Frontend | React 18, Vite, Tailwind CSS, Lucide, React Markdown |
-| Backend  | Node.js, Express, Mongoose, OpenAI SDK, dotenv, cors |
+| Backend  | Node.js, Express, Mongoose, OpenAI SDK (Gemini + Groq via their OpenAI-compatible APIs), dotenv, cors |
 | Database | MongoDB                                           |
 
 ## Architecture
@@ -34,8 +34,8 @@ React (Vite, :5173)
 Express (:5000)
    ├── conversationService ──> MongoDB (persistent chats)
    │                       └─> in-memory Map (temporary chats)
-   └── aiService ────────────> OpenAI (primary, streaming)
-                           └─> Groq  (automatic fallback on rate-limit/quota/5xx)
+   └── aiService ────────────> Gemini (primary, OpenAI-compatible API, streaming)
+                           └─> Groq   (automatic fallback on rate-limit/quota/auth/5xx)
 ```
 
 - `server/src/controllers` — request handling and validation
@@ -52,7 +52,7 @@ Prerequisites: Node 18+, MongoDB running locally (or an Atlas URI), an OpenAI AP
 # Backend
 cd server
 npm install
-cp .env.example .env   # then fill in OPENAI_API_KEY
+cp .env.example .env   # then fill in GEMINI_API_KEY (and optionally GROQ_API_KEY)
 npm run dev            # http://localhost:5000
 
 # Frontend (separate terminal)
@@ -64,15 +64,15 @@ npm run dev            # http://localhost:5173
 ### Environment variables (`server/.env`)
 
 ```
-OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=...
 MONGODB_URI=mongodb://127.0.0.1:27017/chatify
 PORT=5000
-OPENAI_MODEL=gpt-4o-mini             # optional
+GEMINI_MODEL=gemini-2.0-flash        # optional
 GROQ_API_KEY=gsk_...                 # optional fallback provider
-GROQ_MODEL=llama-3.1-8b-instant      # optional
+GROQ_MODEL=openai/gpt-oss-20b        # optional
 ```
 
-The API key never reaches the frontend; all OpenAI calls happen server-side.
+API keys never reach the frontend; all AI calls happen server-side.
 
 ## API
 
@@ -90,4 +90,4 @@ The API key never reaches the frontend; all OpenAI calls happen server-side.
 - **Complete responses only** are saved to MongoDB (one write per reply, never per token). If the user stops generation, the partial text is saved once.
 - **Temporary chats** live in an in-memory `Map` on the server with the same interface as Mongo-backed chats, so the rest of the code doesn't care.
 - **Tone mapping lives server-side**; the client only sends a tone id, never a system prompt.
-- **Provider fallback**: OpenAI is primary; Groq (OpenAI-compatible API, same SDK) takes over only on rate-limit/quota/temporary server failures. Both receive identical history + tone instructions, and the frontend is provider-agnostic — it just displays the model reported in the stream's `done` event.
+- **Provider fallback**: Gemini is primary (via its official OpenAI-compatible endpoint, so the OpenAI SDK covers both providers); Groq takes over only on rate-limit/quota/auth/temporary server failures. Both receive identical history + tone instructions, and the frontend is provider-agnostic — it just displays the model reported in the stream's `done` event.

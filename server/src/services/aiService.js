@@ -7,15 +7,20 @@ const TONE_INSTRUCTIONS = {
 };
 
 export const SUPPORTED_TONES = Object.keys(TONE_INSTRUCTIONS);
-export const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+export const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
 
-let openaiClient, groqClient;
-function getOpenAI() {
-  if (!openaiClient) openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  return openaiClient;
+// Both providers expose OpenAI-compatible APIs, so one SDK covers both.
+let geminiClient, groqClient;
+function getGemini() {
+  if (!geminiClient) {
+    geminiClient = new OpenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"
+    });
+  }
+  return geminiClient;
 }
-// Groq exposes an OpenAI-compatible API, so the same SDK works with a different baseURL.
 function getGroq() {
   if (!groqClient) {
     groqClient = new OpenAI({
@@ -26,11 +31,11 @@ function getGroq() {
   return groqClient;
 }
 
-// Temporary provider failures worth falling back on: rate limit, quota, server errors, connectivity.
+// Provider failures worth falling back on: rate limit, quota, server errors,
+// connectivity, and auth (an invalid/missing key makes the provider unavailable).
 function isFallbackWorthy(err) {
   const status = err?.status || err?.response?.status;
-  // 401 counts too: an invalid/missing key makes OpenAI effectively unavailable.
-  return status === 429 || status === 401 || (status >= 500 && status < 600) || err?.code === "insufficient_quota" || !status;
+  return status === 429 || status === 401 || status === 403 || status === 404 || (status >= 500 && status < 600) || err?.code === "insufficient_quota" || !status;
 }
 
 function buildMessages(history, tone) {
@@ -43,8 +48,8 @@ function buildMessages(history, tone) {
   ];
 }
 
-// Returns { stream, model, provider }. Tries OpenAI first; falls back to Groq
-// on rate-limit/quota/temporary failures when GROQ_API_KEY is configured.
+// Returns { stream, model, provider }. Tries Gemini first; falls back to Groq
+// on rate-limit/quota/auth/temporary failures when GROQ_API_KEY is configured.
 export async function streamChat({ history, tone, signal }) {
   const messages = buildMessages(history, tone);
   const request = (client, model) =>
@@ -54,11 +59,11 @@ export async function streamChat({ history, tone, signal }) {
     );
 
   try {
-    const stream = await request(getOpenAI(), MODEL);
-    return { stream, model: MODEL, provider: "openai" };
+    const stream = await request(getGemini(), MODEL);
+    return { stream, model: MODEL, provider: "gemini" };
   } catch (err) {
     if (process.env.GROQ_API_KEY && isFallbackWorthy(err) && !signal?.aborted) {
-      console.warn(`OpenAI unavailable (${err.status || err.code || err.message}), falling back to Groq`);
+      console.warn(`Gemini unavailable (${err.status || err.code || err.message}), falling back to Groq`);
       const stream = await request(getGroq(), GROQ_MODEL);
       return { stream, model: GROQ_MODEL, provider: "groq" };
     }
