@@ -72,7 +72,8 @@ export async function sendMessage(req, res, next) {
       }
     } catch (err) {
       if (!abort.signal.aborted) {
-        console.error("OpenAI stream error:", err.message);
+        console.error("AI stream error:", err.message);
+        await store.saveConversation(convo).catch(() => {});
         send({ type: "error", error: "AI service error. Please try again." });
         return res.end();
       }
